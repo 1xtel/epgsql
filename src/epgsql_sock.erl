@@ -46,6 +46,7 @@
 -export([start_link/0,
          close/1,
          sync_command/3,
+         sync_command/4,
          async_command/4,
          get_parameter/2,
          set_notice_receiver/2,
@@ -131,6 +132,10 @@ close(C) when is_pid(C) ->
 -spec sync_command(epgsql:connection(), epgsql_command:command(), any()) -> any().
 sync_command(C, Command, Args) ->
     gen_server:call(C, {command, Command, Args}, infinity).
+
+-spec sync_command(epgsql:connection(), epgsql_command:command(), any(), timeout()) -> any().
+sync_command(C, Command, Args, Timeout) ->
+    gen_server:call(C, {command, Command, Args}, Timeout).
 
 -spec async_command(epgsql:connection(), cast | incremental,
                     epgsql_command:command(), any()) -> reference().

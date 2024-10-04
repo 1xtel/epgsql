@@ -13,8 +13,8 @@
          set_notice_receiver/2,
          get_cmd_status/1,
          get_backend_pid/1,
-         squery/2,
-         equery/2, equery/3, equery/4,
+         squery/2,squery/3,
+         equery/3, equery/4, equery/5,
          prepared_query/3,
          parse/2, parse/3, parse/4,
          describe/2, describe/3,
@@ -279,26 +279,33 @@ get_backend_pid(C) ->
 squery(Connection, SqlQuery) ->
     epgsql_sock:sync_command(Connection, epgsql_cmd_squery, SqlQuery).
 
-equery(C, Sql) ->
-    equery(C, Sql, []).
+-spec squery(connection(), sql_query(), timeout()) -> epgsql_cmd_squery:response() | epgsql_sock:error().
+%% @doc runs simple `SqlQuery' via given `Connection'
+%% @see epgsql_cmd_squery
+squery(Connection, SqlQuery, Timeout) ->
+   epgsql_sock:sync_command(Connection, epgsql_cmd_squery, SqlQuery, Timeout).
 
--spec equery(connection(), sql_query(), [bind_param()]) ->
+equery(C, Sql, Timeout) ->
+    equery(C, Sql, [], Timeout).
+
+-spec equery(connection(), sql_query(), [bind_param()], timeout()) ->
                     epgsql_cmd_equery:response() | epgsql_sock:error().
-equery(C, Sql, Parameters) ->
-    equery(C, "", Sql, Parameters).
+
+equery(C, Sql, Parameters, Timeout) ->
+    equery(C, "", Sql, Parameters, Timeout).
 
 %% @doc Executes extended query
 %% @end
 %% @see epgsql_cmd_equery
 %% @end
 %% TODO add fast_equery command that doesn't need parsed statement
--spec equery(connection(), string(), sql_query(), [bind_param()]) ->
+-spec equery(connection(), string(), sql_query(), [bind_param()], timeout()) ->
                     epgsql_cmd_equery:response() | epgsql_sock:error().
-equery(C, Name, Sql, Parameters) ->
+equery(C, Name, Sql, Parameters, Timeout) ->
     case parse(C, Name, Sql, []) of
         {ok, #statement{types = Types} = S} ->
             TypedParameters = lists:zip(Types, Parameters),
-            epgsql_sock:sync_command(C, epgsql_cmd_equery, {S, TypedParameters});
+            epgsql_sock:sync_command(C, epgsql_cmd_equery, {S, TypedParameters}, Timeout);
         Error ->
             Error
     end.
